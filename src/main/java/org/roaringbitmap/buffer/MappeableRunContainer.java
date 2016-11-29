@@ -4,13 +4,11 @@
 package org.roaringbitmap.buffer;
 
 
-import org.roaringbitmap.Container;
-import org.roaringbitmap.IntConsumer;
-import org.roaringbitmap.PeekableShortIterator;
-import org.roaringbitmap.RunContainer;
-import org.roaringbitmap.ShortIterator;
+import org.roaringbitmap.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -1811,14 +1809,15 @@ public final class MappeableRunContainer extends MappeableContainer implements C
   }
 
   @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+  public void deserialize(ByteBuffer in) throws IOException {
+    in.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
-    this.nbrruns = 0xFFFF & Short.reverseBytes(in.readShort());
+    this.nbrruns = 0xFFFF & in.getShort();
     if (this.valueslength.capacity() < 2 * this.nbrruns) {
       this.valueslength = ShortBuffer.allocate(2 * this.nbrruns);
     }
     for (int k = 0; k < 2 * this.nbrruns; ++k) {
-      this.valueslength.put(k, Short.reverseBytes(in.readShort()));
+      this.valueslength.put(k, in.getShort());
     }
   }
 
@@ -2201,18 +2200,20 @@ public final class MappeableRunContainer extends MappeableContainer implements C
   }
 
   @Override
-  protected void writeArray(DataOutput out) throws IOException {
-    out.writeShort(Short.reverseBytes((short) this.nbrruns));
+  protected void writeArray(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
+    out.putShort((short) this.nbrruns);
     for (int k = 0; k < 2 * this.nbrruns; ++k) {
-      out.writeShort(Short.reverseBytes(this.valueslength.get(k)));
+      out.putShort(this.valueslength.get(k));
     }
   }
 
   @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    out.writeShort(Short.reverseBytes((short) this.nbrruns));
+  public void serialize(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
+    out.putShort((short) this.nbrruns);
     for (int k = 0; k < 2 * this.nbrruns; ++k) {
-      out.writeShort(Short.reverseBytes(this.valueslength.get(k)));
+      out.putShort(this.valueslength.get(k));
     }
   }
 

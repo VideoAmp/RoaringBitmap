@@ -4,12 +4,16 @@
 
 package org.roaringbitmap;
 
-import java.io.*;
-import java.util.Iterator;
-
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 import org.roaringbitmap.buffer.MappeableContainerPointer;
 import org.roaringbitmap.buffer.MutableRoaringBitmap;
+import sun.misc.IOUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
 
 
 /**
@@ -43,7 +47,7 @@ import org.roaringbitmap.buffer.MutableRoaringBitmap;
  */
 
 
-public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>, Externalizable,
+public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>,
     ImmutableBitmapDataProvider {
 
   private final class RoaringIntIterator implements PeekableIntIterator {
@@ -1215,7 +1219,6 @@ public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>
     return c != null && c.contains(Util.lowbits(x));
   }
 
-
   /**
    * Deserialize (retrieve) this bitmap.
    *
@@ -1224,7 +1227,7 @@ public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>
    * @param in the DataInput stream
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void deserialize(DataInput in) throws IOException {
+  public void deserialize(ByteBuffer in) throws IOException {
     this.highLowContainer.deserialize(in);
   }
 
@@ -1719,11 +1722,6 @@ public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>
     return (int) rankLong(x);
   }
 
-  @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    this.highLowContainer.readExternal(in);
-  }
-
   /**
    * If present remove the specified integer (effectively, sets its bit value to false)
    *
@@ -1933,8 +1931,7 @@ public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>
    * @param out the DataOutput stream
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  @Override
-  public void serialize(DataOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
     this.highLowContainer.serialize(out);
   }
 
@@ -2137,12 +2134,6 @@ public class RoaringBitmap implements Cloneable, Serializable, Iterable<Integer>
     for (int i = 0; i < this.highLowContainer.size(); i++) {
       this.highLowContainer.getContainerAtIndex(i).trim();
     }
-  }
-
-
-  @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    this.highLowContainer.writeExternal(out);
   }
 
   /**

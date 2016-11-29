@@ -12,16 +12,14 @@ import java.util.ArrayList;
 public class TestFastAggregation {
 
   private static ImmutableRoaringBitmap toMapped(MutableRoaringBitmap r) {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(bos);
+    ByteBuffer buffer = ByteBuffer.allocate(r.serializedSizeInBytes());
     try {
-      r.serialize(dos);
-      dos.close();
+      r.serialize(buffer);
+      buffer.flip();
     } catch (IOException e) {
       throw new RuntimeException(e.toString());
     }
-    ByteBuffer bb = ByteBuffer.wrap(bos.toByteArray());
-    return new ImmutableRoaringBitmap(bb);
+    return new ImmutableRoaringBitmap(buffer);
   }
 
   @Test

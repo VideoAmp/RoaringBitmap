@@ -4,11 +4,11 @@
 
 package org.roaringbitmap.buffer;
 
+import org.roaringbitmap.Util;
+
 import java.nio.Buffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-
-import org.roaringbitmap.Util;
 
 /**
  * Various useful methods for roaring bitmaps.

@@ -4,8 +4,8 @@
 
 package org.roaringbitmap.buffer;
 
-import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Generic interface for the array underlying roaring bitmap classes.
@@ -91,7 +91,7 @@ public interface PointableRoaringArray extends Cloneable {
    * @param out the DataOutput stream
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void serialize(DataOutput out) throws IOException;
+  public void serialize(ByteBuffer out) throws IOException;
 
   /**
    * @return the size that the data structure occupies on disk

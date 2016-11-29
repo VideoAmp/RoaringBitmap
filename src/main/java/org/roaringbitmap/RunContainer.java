@@ -3,17 +3,15 @@
  */
 package org.roaringbitmap;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import org.roaringbitmap.buffer.MappeableContainer;
+import org.roaringbitmap.buffer.MappeableRunContainer;
+
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
-
-import org.roaringbitmap.buffer.MappeableContainer;
-import org.roaringbitmap.buffer.MappeableRunContainer;
 
 
 
@@ -790,13 +788,14 @@ public final class RunContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void deserialize(DataInput in) throws IOException {
-    nbrruns = Short.reverseBytes(in.readShort());
+  public void deserialize(ByteBuffer in) throws IOException {
+    in.order(ByteOrder.LITTLE_ENDIAN);
+    nbrruns = in.getShort();
     if (valueslength.length < 2 * nbrruns) {
       valueslength = new short[2 * nbrruns];
     }
     for (int k = 0; k < 2 * nbrruns; ++k) {
-      this.valueslength[k] = Short.reverseBytes(in.readShort());
+      this.valueslength[k] = in.getShort();
     }
   }
 
@@ -1840,11 +1839,6 @@ public final class RunContainer extends Container implements Cloneable {
     return answer;
   }
 
-  @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    deserialize(in);
-  }
-
   private void recoverRoomAtIndex(int index) {
     copyValuesLength(valueslength, index + 1, valueslength, index, nbrruns - index - 1);
     nbrruns--;
@@ -1930,7 +1924,7 @@ public final class RunContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void serialize(DataOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
     writeArray(out);
   }
 
@@ -2244,17 +2238,12 @@ public final class RunContainer extends Container implements Cloneable {
   }
 
   @Override
-  protected void writeArray(DataOutput out) throws IOException {
-    out.writeShort(Short.reverseBytes((short) this.nbrruns));
+  protected void writeArray(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
+    out.putShort((short) this.nbrruns);
     for (int k = 0; k < 2 * this.nbrruns; ++k) {
-      out.writeShort(Short.reverseBytes(this.valueslength[k]));
+      out.putShort(this.valueslength[k]);
     }
-  }
-
-  @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    serialize(out);
-
   }
 
   @Override

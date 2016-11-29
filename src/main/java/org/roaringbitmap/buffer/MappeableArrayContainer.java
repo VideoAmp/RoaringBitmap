@@ -4,14 +4,11 @@
 
 package org.roaringbitmap.buffer;
 
-import org.roaringbitmap.ArrayContainer;
-import org.roaringbitmap.Container;
-import org.roaringbitmap.IntConsumer;
-import org.roaringbitmap.PeekableShortIterator;
-import org.roaringbitmap.ShortIterator;
-import org.roaringbitmap.Util;
+import org.roaringbitmap.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -1161,14 +1158,15 @@ public final class MappeableArrayContainer extends MappeableContainer implements
   }
 
   @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+  public void deserialize(ByteBuffer in) {
+    in.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
-    this.cardinality = 0xFFFF & Short.reverseBytes(in.readShort());
+    this.cardinality = 0xFFFF & in.getShort();
     if (this.content.limit() < this.cardinality) {
       this.content = ShortBuffer.allocate(this.cardinality);
     }
     for (int k = 0; k < this.cardinality; ++k) {
-      this.content.put(k, Short.reverseBytes(in.readShort()));
+      this.content.put(k, in.getShort());
     }
   }
 
@@ -1317,32 +1315,34 @@ public final class MappeableArrayContainer extends MappeableContainer implements
   }
 
   @Override
-  protected void writeArray(DataOutput out) throws IOException {
+  protected void writeArray(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
     if (BufferUtil.isBackedBySimpleArray(content)) {
       short[] a = content.array();
       for (int k = 0; k < this.cardinality; ++k) {
-        out.writeShort(Short.reverseBytes(a[k]));
+        out.putShort(a[k]);
       }
     } else {
       for (int k = 0; k < this.cardinality; ++k) {
-        out.writeShort(Short.reverseBytes(content.get(k)));
+        out.putShort(content.get(k));
       }
     }
   }
 
   @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    out.write(this.cardinality & 0xFF);
-    out.write((this.cardinality >>> 8) & 0xFF);
+  public void serialize(ByteBuffer out) {
+    out.order(ByteOrder.LITTLE_ENDIAN);
+    out.put((byte) (this.cardinality & 0xFF));
+    out.put((byte) ((this.cardinality >>> 8) & 0xFF));
     if (BufferUtil.isBackedBySimpleArray(content)) {
       short[] a = content.array();
       for (int k = 0; k < this.cardinality; ++k) {
-        out.writeShort(Short.reverseBytes(a[k]));
+        out.putShort(a[k]);
       }
     } else {
       for (int k = 0; k < this.cardinality; ++k) {
-        out.writeShort(Short.reverseBytes(content.get(k)));
+        out.putShort(content.get(k));
       }
     }
   }

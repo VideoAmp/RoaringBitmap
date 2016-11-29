@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -3469,15 +3470,11 @@ public class TestRoaringBitmap {
     for (int k = 65000; k < 2 * 65000; ++k) {
       rr.add(k);
     }
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    // Note: you could use a file output steam instead of
-    // ByteArrayOutputStream
-    final ObjectOutputStream oo = new ObjectOutputStream(bos);
-    rr.writeExternal(oo);
-    oo.close();
+    ByteBuffer bb = ByteBuffer.allocate(rr.serializedSizeInBytes());
+    rr.serialize(bb);
+    bb.flip();
     final RoaringBitmap rrback = new RoaringBitmap();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    rrback.readExternal(new ObjectInputStream(bis));
+    rrback.deserialize(bb);
     Assert.assertEquals(rr.getCardinality(), rrback.getCardinality());
     Assert.assertTrue(rr.equals(rrback));
   }
@@ -3490,15 +3487,11 @@ public class TestRoaringBitmap {
     for (int k = 65000; k < 2 * 65000; ++k) {
         rr.add((1<<31)+k);
     }
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    // Note: you could use a file output steam instead of
-    // ByteArrayOutputStream
-    final ObjectOutputStream oo = new ObjectOutputStream(bos);
-    rr.writeExternal(oo);
-    oo.close();
+    ByteBuffer bb = ByteBuffer.allocate(rr.serializedSizeInBytes());
+    rr.serialize(bb);
+    bb.flip();
     final RoaringBitmap rrback = new RoaringBitmap();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    rrback.readExternal(new ObjectInputStream(bis));
+    rrback.deserialize(bb);
     Assert.assertEquals(rr.getCardinality(), rrback.getCardinality());
     Assert.assertTrue(rr.equals(rrback));
   }
@@ -3513,15 +3506,11 @@ public class TestRoaringBitmap {
     for (int k = 200; k < 400; ++k) {
       rr.add(k);
     }
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    // Note: you could use a file output steam instead of
-    // ByteArrayOutputStream
-    final ObjectOutputStream oo = new ObjectOutputStream(bos);
-    rr.writeExternal(oo);
-    oo.close();
+    ByteBuffer bb = ByteBuffer.allocate(rr.serializedSizeInBytes());
+    rr.serialize(bb);
+    bb.flip();
     final RoaringBitmap rrback = new RoaringBitmap();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    rrback.readExternal(new ObjectInputStream(bis));
+    rrback.deserialize(bb);
     Assert.assertEquals(rr.getCardinality(), rrback.getCardinality());
     Assert.assertTrue(rr.equals(rrback));
   }
@@ -3533,17 +3522,13 @@ public class TestRoaringBitmap {
       rr.add(k);
     }
     rr.add(1444000);
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    // Note: you could use a file output steam instead of
-    // ByteArrayOutputStream
     int howmuch = rr.serializedSizeInBytes();
-    final DataOutputStream oo = new DataOutputStream(bos);
-    rr.serialize(oo);
-    oo.close();
-    Assert.assertEquals(howmuch, bos.toByteArray().length);
+    ByteBuffer bb = ByteBuffer.allocate(howmuch);
+    rr.serialize(bb);
+    bb.flip();
+    Assert.assertEquals(howmuch, bb.limit());
     final RoaringBitmap rrback = new RoaringBitmap();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    rrback.deserialize(new DataInputStream(bis));
+    rrback.deserialize(bb);
     Assert.assertEquals(rr.getCardinality(), rrback.getCardinality());
     Assert.assertTrue(rr.equals(rrback));
   }
@@ -3554,17 +3539,13 @@ public class TestRoaringBitmap {
     for (int k = 1; k <= 10000000; k += 10) {
       rr.add(k);
     }
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    // Note: you could use a file output steam instead of
-    // ByteArrayOutputStream
     int howmuch = rr.serializedSizeInBytes();
-    final DataOutputStream oo = new DataOutputStream(bos);
-    rr.serialize(oo);
-    oo.close();
-    Assert.assertEquals(howmuch, bos.toByteArray().length);
+    ByteBuffer bb = ByteBuffer.allocate(howmuch);
+    rr.serialize(bb);
+    bb.flip();
+    Assert.assertEquals(howmuch, bb.limit());
     final RoaringBitmap rrback = new RoaringBitmap();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    rrback.deserialize(new DataInputStream(bis));
+    rrback.deserialize(bb);
     Assert.assertEquals(rr.getCardinality(), rrback.getCardinality());
     Assert.assertTrue(rr.equals(rrback));
   }

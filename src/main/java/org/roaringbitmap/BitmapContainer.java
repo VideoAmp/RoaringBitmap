@@ -4,13 +4,15 @@
 
 package org.roaringbitmap;
 
-import java.io.*;
+import org.roaringbitmap.buffer.MappeableBitmapContainer;
+import org.roaringbitmap.buffer.MappeableContainer;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
-
-import org.roaringbitmap.buffer.MappeableBitmapContainer;
-import org.roaringbitmap.buffer.MappeableContainer;
 
 
 /**
@@ -300,11 +302,12 @@ public final class BitmapContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void deserialize(DataInput in) throws IOException {
+  public void deserialize(ByteBuffer in) throws IOException {
+    in.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
     this.cardinality = 0;
     for (int k = 0; k < bitmap.length; ++k) {
-      long w = Long.reverseBytes(in.readLong());
+      long w = in.getLong();
       bitmap[k] = w;
       this.cardinality += Long.bitCount(w);
     }
@@ -996,11 +999,6 @@ public final class BitmapContainer extends Container implements Cloneable {
     return answer;
   }
 
-  @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    deserialize(in);
-  }
-
 
   @Override
   public Container remove(int begin, int end) {
@@ -1088,10 +1086,11 @@ public final class BitmapContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void serialize(DataOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
     for (long w : bitmap) {
-      out.writeLong(Long.reverseBytes(w));
+      out.putLong(w);
     }
   }
 
@@ -1150,12 +1149,7 @@ public final class BitmapContainer extends Container implements Cloneable {
   public void trim() {}
 
   @Override
-  protected void writeArray(DataOutput out) throws IOException {
-    serialize(out);
-  }
-
-  @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
+  protected void writeArray(ByteBuffer out) throws IOException {
     serialize(out);
   }
 

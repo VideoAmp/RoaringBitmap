@@ -1,12 +1,12 @@
 package org.roaringbitmap.buffer;
 
 
+import org.roaringbitmap.IntIterator;
+
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.BitSet;
-
-import org.roaringbitmap.IntIterator;
 
 
 /***

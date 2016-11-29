@@ -3,6 +3,7 @@ package org.roaringbitmap.buffer;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 
@@ -78,13 +79,11 @@ public class TestMappeableRunContainer {
   public void roundtrip() throws Exception {
     MappeableContainer rc = new MappeableRunContainer();
     rc = rc.add(1, 5);
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try (ObjectOutputStream oo = new ObjectOutputStream(bos)) {
-      rc.writeExternal(oo);
-    }
+    ByteBuffer bb = ByteBuffer.allocate(rc.serializedSizeInBytes());
+    rc.serialize(bb);
+    bb.flip();
     MappeableContainer rc2 = new MappeableRunContainer();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    rc2.readExternal(new ObjectInputStream(bis));
+    rc2.deserialize(bb);
 
     assertEquals(4, rc2.getCardinality());
     for (int i = 1; i < 5; i++) {

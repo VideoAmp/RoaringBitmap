@@ -23,15 +23,13 @@ import static org.roaringbitmap.buffer.MappeableArrayContainer.DEFAULT_MAX_SIZE;
 
 public class TestRunContainer {
   private static ImmutableRoaringBitmap toMapped(MutableRoaringBitmap r) {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(bos);
+    ByteBuffer bb = ByteBuffer.allocate(r.serializedSizeInBytes());
     try {
-      r.serialize(dos);
-      dos.close();
+      r.serialize(bb);
+      bb.flip();
     } catch (IOException e) {
       throw new RuntimeException(e.toString());
     }
-    ByteBuffer bb = ByteBuffer.wrap(bos.toByteArray());
     return new ImmutableRoaringBitmap(bb);
   }
 

@@ -4,16 +4,8 @@
 
 package org.roaringbitmap.buffer;
 
-import org.roaringbitmap.ImmutableBitmapDataProvider;
-import org.roaringbitmap.IntConsumer;
-import org.roaringbitmap.IntIterator;
-import org.roaringbitmap.PeekableIntIterator;
-import org.roaringbitmap.PeekableShortIterator;
-import org.roaringbitmap.RoaringBitmap;
-import org.roaringbitmap.ShortIterator;
-import org.roaringbitmap.Util;
+import org.roaringbitmap.*;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -475,7 +467,7 @@ public class ImmutableRoaringBitmap
   /**
    * Return new iterator with only values from rangeStart (inclusive) to rangeEnd (exclusive)
    * 
-   * @param input bitmaps iterator
+   * @param bitmaps iterator
    * @param rangeStart inclusive
    * @param rangeEnd exclusive
    * @return new iterator of bitmaps
@@ -1262,7 +1254,7 @@ public class ImmutableRoaringBitmap
    * @throws IOException Signals that an I/O exception has occurred.
    */
   @Override
-  public void serialize(DataOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
     this.highLowContainer.serialize(out);
   }
 

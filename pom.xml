@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.roaringbitmap</groupId>
+  <groupId>com.videoamp</groupId>
   <artifactId>RoaringBitmap</artifactId>
-  <version>0.6.27</version>
+  <version>0.6.28</version>
   <name>RoaringBitmap</name>
   <url>https://github.com/lemire/RoaringBitmap</url>
   <description>Roaring bitmaps are compressed bitmaps (also called bitsets) which tend to outperform
@@ -42,6 +42,13 @@
     <system>GitHub Issue Tracking</system>
     <url>https://github.com/lemire/RoaringBitmap/issues</url>
   </issueManagement>
+  <distributionManagement>
+    <repository>
+      <id>VideoAmpReleases</id>
+      <name>videoamp-releases</name>
+      <url>https://videoamp.artifactoryonline.com/videoamp/release</url>
+    </repository>
+  </distributionManagement>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -77,6 +84,27 @@
   </parent>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>org.roaringbitmap</pattern>
+                  <shadedPattern>com.videoamp.roaringbitmap</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
@@ -185,20 +213,6 @@
             <Import-Package>*</Import-Package>
           </instructions>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

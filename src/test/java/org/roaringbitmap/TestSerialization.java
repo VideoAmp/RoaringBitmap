@@ -145,11 +145,9 @@ public class TestSerialization {
         .allocate(bitmap_a.serializedSizeInBytes() + bitmap_empty.serializedSizeInBytes());
     presoutbb = ByteBuffer
         .allocate(bitmap_a.serializedSizeInBytes() + bitmap_empty.serializedSizeInBytes());
-    ByteBufferBackedOutputStream out = new ByteBufferBackedOutputStream(presoutbb);
     try {
-      DataOutputStream dos = new DataOutputStream(out);
-      bitmap_empty.serialize(dos);
-      bitmap_a.serialize(dos);
+      bitmap_empty.serialize(presoutbb);
+      bitmap_a.serialize(presoutbb);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -187,10 +185,8 @@ public class TestSerialization {
   @Test
   public void testDeserialize() throws IOException {
     presoutbb.rewind();
-    ByteBufferBackedInputStream in = new ByteBufferBackedInputStream(presoutbb);
-    DataInputStream dis = new DataInputStream(in);
-    bitmap_empty.deserialize(dis);
-    bitmap_b.deserialize(dis);
+    bitmap_empty.deserialize(presoutbb);
+    bitmap_b.deserialize(presoutbb);
   }
 
 
@@ -249,9 +245,8 @@ public class TestSerialization {
     bm1.runOptimize();
 
     bb1 = ByteBuffer.allocate(bitmap_a.serializedSizeInBytes());
-    ByteBufferBackedOutputStream out = new ByteBufferBackedOutputStream(bb1);
     try {
-      bm1.serialize(new DataOutputStream(out));
+      bm1.serialize(bb1);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -291,13 +286,11 @@ public class TestSerialization {
   @Test
   public void testMutableBuildingBySerialization() throws IOException {
     presoutbb.rewind();
-    ByteBufferBackedInputStream in = new ByteBufferBackedInputStream(presoutbb);
     MutableRoaringBitmap emptyt = new MutableRoaringBitmap();
     MutableRoaringBitmap mrb = new MutableRoaringBitmap();
-    DataInputStream dis = new DataInputStream(in);
-    emptyt.deserialize(dis);
+    emptyt.deserialize(presoutbb);
     assertEquals(emptyt.isEmpty(), true);
-    mrb.deserialize(dis);
+    mrb.deserialize(presoutbb);
     int cksum1 = 0, cksum2 = 0;
     for (int x : bitmap_a) {
       cksum1 += x;
@@ -313,10 +306,8 @@ public class TestSerialization {
   @Test
   public void testMutableDeserializeMutable() throws IOException {
     presoutbb.rewind();
-    ByteBufferBackedInputStream in = new ByteBufferBackedInputStream(presoutbb);
-    DataInputStream dis = new DataInputStream(in);
-    bitmap_emptyr.deserialize(dis);
-    bitmap_br.deserialize(dis);
+    bitmap_emptyr.deserialize(presoutbb);
+    bitmap_br.deserialize(presoutbb);
   }
 
   @Test
@@ -350,12 +341,11 @@ public class TestSerialization {
     assertEquals(bitmap_amr.serializedSizeInBytes(), bitmap_ar.serializedSizeInBytes());
 
     ByteBuffer outbuf = ByteBuffer.allocate(2*(bitmap_a.serializedSizeInBytes() + bitmap_ar.serializedSizeInBytes()));
-    DataOutputStream out = new DataOutputStream(new ByteBufferBackedOutputStream(outbuf));
     try {
-      bitmap_a.serialize(out);
-      bitmap_ar.serialize(out);
-      bitmap_am.serialize(out);
-      bitmap_amr.serialize(out);
+      bitmap_a.serialize(outbuf);
+      bitmap_ar.serialize(outbuf);
+      bitmap_am.serialize(outbuf);
+      bitmap_amr.serialize(outbuf);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -366,11 +356,10 @@ public class TestSerialization {
     RoaringBitmap bitmap_c3 = new RoaringBitmap();
     RoaringBitmap bitmap_c4 = new RoaringBitmap();
 
-    DataInputStream in = new DataInputStream(new ByteBufferBackedInputStream(outbuf));
-    bitmap_c1.deserialize(in);
-    bitmap_c2.deserialize(in);
-    bitmap_c3.deserialize(in);
-    bitmap_c4.deserialize(in);
+    bitmap_c1.deserialize(outbuf);
+    bitmap_c2.deserialize(outbuf);
+    bitmap_c3.deserialize(outbuf);
+    bitmap_c4.deserialize(outbuf);
 
     assertEquals(bitmap_a, bitmap_c1);
     assertEquals(bitmap_a, bitmap_c2);
@@ -387,11 +376,9 @@ public class TestSerialization {
   public void testMutableSerialize() throws IOException {
     System.out.println("testMutableSerialize");
     outbb.rewind();
-    ByteBufferBackedOutputStream out = new ByteBufferBackedOutputStream(outbb);
     System.out.println("bitmap_ar is " + bitmap_ar.getClass().getName());
-    DataOutputStream dos = new DataOutputStream(out);
-    bitmap_emptyr.serialize(dos);
-    bitmap_ar.serialize(dos);
+    bitmap_emptyr.serialize(outbb);
+    bitmap_ar.serialize(outbb);
   }
 
 
@@ -414,9 +401,8 @@ public class TestSerialization {
     bitmap_a.runOptimize(); // mix of all 3 container kinds
 
     ByteBuffer outbuf = ByteBuffer.allocate(bitmap_a.serializedSizeInBytes());
-    ByteBufferBackedOutputStream out = new ByteBufferBackedOutputStream(outbuf);
     try {
-      bitmap_a.serialize(new DataOutputStream(out));
+      bitmap_a.serialize(outbuf);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -424,8 +410,7 @@ public class TestSerialization {
 
     RoaringBitmap bitmap_c = new RoaringBitmap();
 
-    ByteBufferBackedInputStream in = new ByteBufferBackedInputStream(outbuf);
-    bitmap_c.deserialize(new DataInputStream(in));
+    bitmap_c.deserialize(outbuf);
 
     assertEquals(bitmap_a, bitmap_c);
   }
@@ -435,10 +420,8 @@ public class TestSerialization {
   @Test
   public void testSerialize() throws IOException {
     outbb.rewind();
-    ByteBufferBackedOutputStream out = new ByteBufferBackedOutputStream(outbb);
-    DataOutputStream dos = new DataOutputStream(out);
-    bitmap_empty.serialize(dos);
-    bitmap_a.serialize(dos);
+    bitmap_empty.serialize(outbb);
+    bitmap_a.serialize(outbb);
   }
 
 

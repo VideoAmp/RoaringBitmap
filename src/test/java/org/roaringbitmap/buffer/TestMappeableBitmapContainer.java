@@ -515,13 +515,11 @@ public class TestMappeableBitmapContainer {
     LongBuffer buffer = LongBuffer.allocate(MAX_CAPACITY / 64);
     buffer.put(~0L);
     MappeableContainer bc = new MappeableBitmapContainer(buffer.asReadOnlyBuffer(), 64);
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try (ObjectOutputStream oo = new ObjectOutputStream(bos)) {
-      bc.writeExternal(oo);
-    }
+    ByteBuffer byteBuffer = ByteBuffer.allocate(bc.serializedSizeInBytes());
+    bc.serialize(byteBuffer);
+    byteBuffer.flip();
     MappeableContainer bc2 = new MappeableBitmapContainer();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    bc2.readExternal(new ObjectInputStream(bis));
+    bc2.deserialize(byteBuffer);
 
     assertEquals(64, bc2.getCardinality());
     for (int i = 0; i < 64; i++) {

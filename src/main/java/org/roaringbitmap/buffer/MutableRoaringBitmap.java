@@ -4,13 +4,11 @@
 
 package org.roaringbitmap.buffer;
 
-import org.roaringbitmap.BitmapDataProvider;
-import org.roaringbitmap.ContainerPointer;
-import org.roaringbitmap.RoaringBitmap;
-import org.roaringbitmap.ShortIterator;
-import org.roaringbitmap.Util;
+import org.roaringbitmap.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 /**
@@ -53,7 +51,7 @@ import java.util.Iterator;
  * @see org.roaringbitmap.RoaringBitmap
  */
 public class MutableRoaringBitmap extends ImmutableRoaringBitmap
-    implements Cloneable, Serializable, Iterable<Integer>, Externalizable, BitmapDataProvider {
+    implements Cloneable, Serializable, Iterable<Integer>, BitmapDataProvider {
   private static final long serialVersionUID = 4L; // 3L; bumped by ofk for runcontainers
 
 
@@ -879,13 +877,7 @@ public class MutableRoaringBitmap extends ImmutableRoaringBitmap
 
   }
 
-  /**
-   * Deserialize the bitmap (retrieve from the input stream). The current bitmap is overwritten.
-   *
-   * @param in the DataInput stream
-   * @throws IOException Signals that an I/O exception has occurred.
-   */
-  public void deserialize(DataInput in) throws IOException {
+  public void deserialize(ByteBuffer in) throws IOException {
     getMappeableRoaringArray().deserialize(in);
   }
 
@@ -1191,14 +1183,6 @@ public class MutableRoaringBitmap extends ImmutableRoaringBitmap
   }
 
 
-
-  @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    getMappeableRoaringArray().readExternal(in);
-
-  }
-
-
   /**
    * If present remove the specified integers (effectively, sets its bit value to false)
    *
@@ -1373,13 +1357,6 @@ public class MutableRoaringBitmap extends ImmutableRoaringBitmap
       this.highLowContainer.getContainerAtIndex(i).trim();
     }
   }
-
-
-  @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    getMappeableRoaringArray().writeExternal(out);
-  }
-
 
 
   /**

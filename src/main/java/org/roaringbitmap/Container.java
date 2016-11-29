@@ -4,17 +4,15 @@
 
 package org.roaringbitmap;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.Externalizable;
-import java.io.IOException;
-
 import org.roaringbitmap.buffer.MappeableContainer;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Base container class.
  */
-public abstract class Container implements Iterable<Short>, Cloneable, Externalizable {
+public abstract class Container implements Iterable<Short>, Cloneable {
 
   /**
    * Create a container initialized with a range of consecutive values
@@ -185,10 +183,10 @@ public abstract class Container implements Iterable<Short>, Cloneable, Externali
   /**
    * Deserialize (recover) the container.
    *
-   * @param in the DataInput stream
+   * @param in ByteBuffer
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public abstract void deserialize(DataInput in) throws IOException;
+  public abstract void deserialize(ByteBuffer in) throws IOException;
 
   /**
    * Fill the least significant 16 bits of the integer array, starting at index i, with the short
@@ -727,10 +725,10 @@ public abstract class Container implements Iterable<Short>, Cloneable, Externali
   /**
    * Serialize the container.
    *
-   * @param out the DataOutput stream
+   * @param out ByteBuffer
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public abstract void serialize(DataOutput out) throws IOException;
+  public abstract void serialize(ByteBuffer out) throws IOException;
 
   /**
    * Report the number of bytes required to serialize this container.
@@ -755,10 +753,10 @@ public abstract class Container implements Iterable<Short>, Cloneable, Externali
   /**
    * Write just the underlying array.
    *
-   * @param out output stream
+   * @param out ByteBuffer
    * @throws IOException in case of failure
    */
-  protected abstract void writeArray(DataOutput out) throws IOException;
+  protected abstract void writeArray(ByteBuffer out) throws IOException;
 
 
   /**

@@ -4,15 +4,11 @@
 
 package org.roaringbitmap.buffer;
 
-import java.io.DataOutput;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 
 
 
@@ -437,14 +433,14 @@ public final class ImmutableRoaringArray implements PointableRoaringArray {
    * @throws IOException Signals that an I/O exception has occurred.
    */
   @Override
-  public void serialize(DataOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
     if (buffer.hasArray()) {
-      out.write(buffer.array(), buffer.arrayOffset(), buffer.limit());
+      out.put(buffer.array(), buffer.arrayOffset(), buffer.limit());
     } else {
       ByteBuffer tmp = buffer.duplicate();
       tmp.position(0);
-      WritableByteChannel channel = Channels.newChannel((OutputStream) out);
-      channel.write(tmp);
+      out.put(tmp);
     }
   }
 

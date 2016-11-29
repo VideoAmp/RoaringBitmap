@@ -4,8 +4,8 @@
 
 package org.roaringbitmap;
 
-import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Interface representing an immutable bitmap.
@@ -135,10 +135,10 @@ public interface ImmutableBitmapDataProvider {
    *
    * The current bitmap is not modified.
    *
-   * @param out the DataOutput stream
+   * @param out ByteBuffer
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void serialize(DataOutput out) throws IOException;
+  public void serialize(ByteBuffer out) throws IOException;
 
   /**
    * Report the number of bytes required to serialize this bitmap. This is the number of bytes

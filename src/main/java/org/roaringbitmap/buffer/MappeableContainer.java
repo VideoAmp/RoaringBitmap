@@ -9,15 +9,14 @@ import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.PeekableShortIterator;
 import org.roaringbitmap.ShortIterator;
 
-import java.io.DataOutput;
-import java.io.Externalizable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Base container class. This class is similar to org.roaringbitmap.Container but meant to be used
  * with memory mapping.
  */
-public abstract class MappeableContainer implements Iterable<Short>, Cloneable, Externalizable {
+public abstract class MappeableContainer implements Iterable<Short>, Cloneable {
   /**
    * Create a container initialized with a range of consecutive values
    * 
@@ -696,7 +695,9 @@ public abstract class MappeableContainer implements Iterable<Short>, Cloneable, 
    */
   public abstract int serializedSizeInBytes();
 
+  public abstract void serialize(ByteBuffer out) throws IOException;
 
+  public abstract void deserialize(ByteBuffer in) throws IOException;
 
   /**
    * Convert to a non-mappeable container.
@@ -718,7 +719,7 @@ public abstract class MappeableContainer implements Iterable<Short>, Cloneable, 
    * @param out output stream
    * @throws IOException in case of failure
    */
-  protected abstract void writeArray(DataOutput out) throws IOException;
+  protected abstract void writeArray(ByteBuffer out) throws IOException;
 
   /**
    * Computes the bitwise XOR of this container with another (symmetric difference). This container

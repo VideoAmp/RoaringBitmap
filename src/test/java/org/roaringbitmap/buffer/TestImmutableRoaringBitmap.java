@@ -29,33 +29,9 @@ import java.util.TreeSet;
 public class TestImmutableRoaringBitmap {
   @SuppressWarnings("resource")
   static ByteBuffer serializeRoaring(ImmutableRoaringBitmap mrb) throws IOException {
-    byte[] backingArray = new byte[mrb.serializedSizeInBytes() + 1024];
-    ByteBuffer outbb = ByteBuffer.wrap(backingArray, 1024, mrb.serializedSizeInBytes()).slice();
-    DataOutputStream dos = new DataOutputStream(new OutputStream() {
-      ByteBuffer mBB;
-
-      OutputStream init(ByteBuffer mbb) {
-        mBB = mbb;
-        return this;
-      }
-
-      @Override
-      public void write(byte[] b) {}
-
-      @Override
-      public void write(byte[] b, int off, int l) {
-        mBB.put(b, off, l);
-      }
-
-      @Override
-      public void write(int b) {
-        mBB.put((byte) b);
-      }
-    }.init(outbb));
-    mrb.serialize(dos);
-    dos.close();
-
-
+    ByteBuffer outbb = ByteBuffer.allocate(mrb.serializedSizeInBytes());
+    mrb.serialize(outbb);
+    outbb.flip();
     return outbb;
   }
 
@@ -656,35 +632,7 @@ public class TestImmutableRoaringBitmap {
       }
       int[] array = rb.toArray();
       ByteBuffer b = ByteBuffer.allocate(rb.serializedSizeInBytes());
-      rb.serialize(new DataOutputStream(new OutputStream() {
-        ByteBuffer mBB;
-
-        @Override
-        public void close() {}
-
-        @Override
-        public void flush() {}
-
-        OutputStream init(final ByteBuffer mbb) {
-          mBB = mbb;
-          return this;
-        }
-
-        @Override
-        public void write(final byte[] b) {
-          mBB.put(b);
-        }
-
-        @Override
-        public void write(final byte[] b, final int off, final int l) {
-          mBB.put(b, off, l);
-        }
-
-        @Override
-        public void write(final int b) {
-          mBB.put((byte) b);
-        }
-      }.init(b)));
+      rb.serialize(b);
       b.flip();
       ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(b);
       Assert.assertTrue(irb.equals(rb));
@@ -729,35 +677,7 @@ public class TestImmutableRoaringBitmap {
       // }
       // Assert.assertTrue(pos+runlength == array.length);
       ByteBuffer b = ByteBuffer.allocate(rb.serializedSizeInBytes());
-      rb.serialize(new DataOutputStream(new OutputStream() {
-        ByteBuffer mBB;
-
-        @Override
-        public void close() {}
-
-        @Override
-        public void flush() {}
-
-        OutputStream init(final ByteBuffer mbb) {
-          mBB = mbb;
-          return this;
-        }
-
-        @Override
-        public void write(final byte[] b) {
-          mBB.put(b);
-        }
-
-        @Override
-        public void write(final byte[] b, final int off, final int l) {
-          mBB.put(b, off, l);
-        }
-
-        @Override
-        public void write(final int b) {
-          mBB.put((byte) b);
-        }
-      }.init(b)));
+      rb.serialize(b);
       b.flip();
       ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(b);
       Assert.assertTrue(irb.equals(rb));
@@ -792,35 +712,7 @@ public class TestImmutableRoaringBitmap {
         }
       }
       ByteBuffer b = ByteBuffer.allocate(r.serializedSizeInBytes());
-      r.serialize(new DataOutputStream(new OutputStream() {
-        ByteBuffer mBB;
-
-        @Override
-        public void close() {}
-
-        @Override
-        public void flush() {}
-
-        OutputStream init(final ByteBuffer mbb) {
-          mBB = mbb;
-          return this;
-        }
-
-        @Override
-        public void write(final byte[] b) {
-          mBB.put(b);
-        }
-
-        @Override
-        public void write(final byte[] b, final int off, final int l) {
-          mBB.put(b, off, l);
-        }
-
-        @Override
-        public void write(final int b) {
-          mBB.put((byte) b);
-        }
-      }.init(b)));
+      r.serialize(b);
       b.flip();
       ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(b);
       Assert.assertTrue(irb.equals(r));
@@ -844,35 +736,7 @@ public class TestImmutableRoaringBitmap {
       }
       r.runOptimize();
       ByteBuffer b = ByteBuffer.allocate(r.serializedSizeInBytes());
-      r.serialize(new DataOutputStream(new OutputStream() {
-        ByteBuffer mBB;
-
-        @Override
-        public void close() {}
-
-        @Override
-        public void flush() {}
-
-        OutputStream init(final ByteBuffer mbb) {
-          mBB = mbb;
-          return this;
-        }
-
-        @Override
-        public void write(final byte[] b) {
-          mBB.put(b);
-        }
-
-        @Override
-        public void write(final byte[] b, final int off, final int l) {
-          mBB.put(b, off, l);
-        }
-
-        @Override
-        public void write(final int b) {
-          mBB.put((byte) b);
-        }
-      }.init(b)));
+      r.serialize(b);
       b.flip();
       ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(b);
       Assert.assertTrue(irb.hashCode() == r.hashCode());

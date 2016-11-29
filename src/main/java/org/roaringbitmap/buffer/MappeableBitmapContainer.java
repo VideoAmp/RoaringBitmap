@@ -4,14 +4,11 @@
 
 package org.roaringbitmap.buffer;
 
-import org.roaringbitmap.BitmapContainer;
-import org.roaringbitmap.Container;
-import org.roaringbitmap.IntConsumer;
-import org.roaringbitmap.PeekableShortIterator;
-import org.roaringbitmap.ShortIterator;
-import org.roaringbitmap.Util;
+import org.roaringbitmap.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.util.Iterator;
 
@@ -1492,20 +1489,21 @@ public final class MappeableBitmapContainer extends MappeableContainer implement
 
 
   @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+  public void deserialize(ByteBuffer in) {
+    in.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
     this.cardinality = 0;
     int len = this.bitmap.limit();
     if (BufferUtil.isBackedBySimpleArray(bitmap)) {
       long[] b = this.bitmap.array();
       for (int k = 0; k < len; ++k) {
-        long w = Long.reverseBytes(in.readLong());
+        long w = in.getLong();
         b[k] = w;
         this.cardinality += Long.bitCount(w);
       }
     } else {
       for (int k = 0; k < len; ++k) {
-        long w = Long.reverseBytes(in.readLong());
+        long w = in.getLong();
         bitmap.put(k, w);
         this.cardinality += Long.bitCount(w);
       }
@@ -1669,24 +1667,25 @@ public final class MappeableBitmapContainer extends MappeableContainer implement
   public void trim() {}
 
   @Override
-  protected void writeArray(DataOutput out) throws IOException {
+  protected void writeArray(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
     int len = this.bitmap.limit();
     if (BufferUtil.isBackedBySimpleArray(bitmap)) {
       long[] b = bitmap.array();
       for (int k = 0; k < len; ++k) {
-        out.writeLong(Long.reverseBytes(b[k]));
+        out.putLong(b[k]);
       }
     } else {
       for (int k = 0; k < len; ++k) {
         final long w = bitmap.get(k);
-        out.writeLong(Long.reverseBytes(w));
+        out.putLong(w);
       }
     }
   }
 
   @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
     writeArray(out);
   }
 

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -146,8 +147,7 @@ public class TestMemoryMapping {
     final ArrayList<Long> offsets = new ArrayList<Long>();
     tmpfile = File.createTempFile("roaring", "bin");
     tmpfile.deleteOnExit();
-    final FileOutputStream fos = new FileOutputStream(tmpfile);
-    final DataOutputStream dos = new DataOutputStream(fos);
+    FileChannel fc = FileChannel.open(tmpfile.toPath(), StandardOpenOption.WRITE, StandardOpenOption.READ);
     for (int N = 65536 * 16; N <= 65536 * 128; N *= 8) {
       for (int gap = 1; gap <= 65536; gap *= 4) {
         final MutableRoaringBitmap rb1 = new MutableRoaringBitmap();
@@ -212,9 +212,12 @@ public class TestMemoryMapping {
         }
 
         rambitmaps.add(rb1);
-        offsets.add(fos.getChannel().position());
-        rb1.serialize(dos);
-        dos.flush();
+        offsets.add(fc.position());
+        ByteBuffer buffer = ByteBuffer.allocate(rb1.serializedSizeInBytes());
+        rb1.serialize(buffer);
+        buffer.flip();
+        fc.write(buffer);
+        fc.force(false);
         for (int offset = 1; offset <= gap; offset *= 8) {
           final MutableRoaringBitmap rb2 = new MutableRoaringBitmap();
           for (int x = 0; x < N; x += gap) {
@@ -222,19 +225,22 @@ public class TestMemoryMapping {
           }
           // gap 1 gives runcontainers
           rb2.runOptimize();
-          offsets.add(fos.getChannel().position());
-          long pbef = fos.getChannel().position();
-          rb2.serialize(dos);
-          long paft = fos.getChannel().position();
+          offsets.add(fc.position());
+          long pbef = fc.position();
+          ByteBuffer bb = ByteBuffer.allocate(rb2.serializedSizeInBytes());
+          rb2.serialize(bb);
+          bb.flip();
+          fc.write(bb);
+          long paft = fc.position();
           if (paft - pbef != rb2.serializedSizeInBytes()) {
             throw new RuntimeException("wrong serializedSizeInBytes:: paft-pbef = " + (paft - pbef)
                 + ", serializedSize = " + rb2.serializedSizeInBytes());
           }
-          dos.flush();
+          fc.force(false);
           rambitmaps.add(rb2);
           // we add tests
           ByteBuffer outbb = ByteBuffer.allocate(rb2.serializedSizeInBytes());
-          rb2.serialize(new DataOutputStream(new ByteBufferBackedOutputStream(outbb)));
+          rb2.serialize(outbb);
           //
           outbb.flip();
           ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(outbb);
@@ -244,10 +250,10 @@ public class TestMemoryMapping {
         }
       }
     }
-    final long totalcount = fos.getChannel().position();
+    final long totalcount = fc.position();
     System.out.println("[TestMemoryMapping] Wrote " + totalcount / 1024 + " KB");
     offsets.add(totalcount);
-    dos.close();
+    fc.close();
     final RandomAccessFile memoryMappedFile = new RandomAccessFile(tmpfile, "r");
     try {
       out = memoryMappedFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, totalcount);
@@ -283,7 +289,7 @@ public class TestMemoryMapping {
     // we add tests
     ByteBuffer outbb = ByteBuffer.allocate(rb.serializedSizeInBytes());
     try {
-      rb.serialize(new DataOutputStream(new ByteBufferBackedOutputStream(outbb)));
+      rb.serialize(outbb);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -297,7 +303,7 @@ public class TestMemoryMapping {
     // we add tests
     ByteBuffer outbb = ByteBuffer.allocate(rb.serializedSizeInBytes());
     try {
-      rb.serialize(new DataOutputStream(new ByteBufferBackedOutputStream(outbb)));
+      rb.serialize(outbb);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -310,7 +316,7 @@ public class TestMemoryMapping {
   public static MutableRoaringBitmap toMutableRoaringBitmap(ByteBuffer bb) {
     MutableRoaringBitmap rb = new MutableRoaringBitmap();
     try {
-      rb.deserialize(new DataInputStream(new ByteBufferBackedInputStream(bb)));
+      rb.deserialize(bb);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -320,7 +326,7 @@ public class TestMemoryMapping {
   public static RoaringBitmap toRoaringBitmap(ByteBuffer bb) {
     RoaringBitmap rb = new RoaringBitmap();
     try {
-      rb.deserialize(new DataInputStream(new ByteBufferBackedInputStream(bb)));
+      rb.deserialize(bb);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -380,11 +386,9 @@ public class TestMemoryMapping {
       rr1.add(Short.MAX_VALUE * i);
     }
 
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(bos);
-    rr1.serialize(dos);
-    dos.close();
-    ByteBuffer bb = ByteBuffer.wrap(bos.toByteArray());
+    ByteBuffer bb = ByteBuffer.allocate(rr1.serializedSizeInBytes());
+    rr1.serialize(bb);
+    bb.flip();
     final ImmutableRoaringBitmap rrback1 = new ImmutableRoaringBitmap(bb);
 
     final CountDownLatch ready = new CountDownLatch(numThreads);
@@ -432,16 +436,11 @@ public class TestMemoryMapping {
     for (int k = 0; k < ms; ++k) {
       System.out.println("[TestMemoryMapping] testing compat. bitmap " + k + " out of " + ms);
       ImmutableRoaringBitmap rr = mappedbitmaps.get(k);
-      ByteArrayOutputStream bos = new ByteArrayOutputStream(rr.serializedSizeInBytes());
-      DataOutputStream dos = new DataOutputStream(bos);
-      rr.serialize(dos);
-      dos.close();
-      byte[] arr = bos.toByteArray();
-      bos = null;
-      ByteArrayInputStream bis = new ByteArrayInputStream(arr);
+      ByteBuffer buffer = ByteBuffer.allocate(rr.serializedSizeInBytes());
+      rr.serialize(buffer);
+      buffer.flip();
       RoaringBitmap newr = new RoaringBitmap();
-      newr.deserialize(new DataInputStream(bis));
-      arr = null;
+      newr.deserialize(buffer);
       RoaringBitmap rrasroaring = rr.toRoaringBitmap();
       Assert.assertEquals(newr, rrasroaring);
       System.out
@@ -456,11 +455,9 @@ public class TestMemoryMapping {
     System.out.println("[TestMemoryMapping] testing reserialization");
     for (int k = 0; k < mappedbitmaps.size(); ++k) {
       ImmutableRoaringBitmap rr = mappedbitmaps.get(k);
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      DataOutputStream dos = new DataOutputStream(bos);
-      rr.serialize(dos);
-      dos.close();
-      ByteBuffer bb = ByteBuffer.wrap(bos.toByteArray());
+      ByteBuffer bb = ByteBuffer.allocate(rr.serializedSizeInBytes());
+      rr.serialize(bb);
+      bb.flip();
       ImmutableRoaringBitmap rrback = new ImmutableRoaringBitmap(bb);
       Assert.assertTrue(rr.equals(rrback));
       Assert.assertTrue(rr.equals(rrback.toMutableRoaringBitmap()));
@@ -474,12 +471,10 @@ public class TestMemoryMapping {
     System.out.println("[TestMemoryMapping] standard test");
     MutableRoaringBitmap rr1 = MutableRoaringBitmap.bitmapOf(1, 2, 3, 1000);
     MutableRoaringBitmap rr2 = MutableRoaringBitmap.bitmapOf(2, 3, 1010);
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(bos);
-    rr1.serialize(dos);
-    rr2.serialize(dos);
-    dos.close();
-    ByteBuffer bb = ByteBuffer.wrap(bos.toByteArray());
+    ByteBuffer bb = ByteBuffer.allocate(rr1.serializedSizeInBytes() + rr2.serializedSizeInBytes());
+    rr1.serialize(bb);
+    rr2.serialize(bb);
+    bb.flip();
     ImmutableRoaringBitmap rrback1 = new ImmutableRoaringBitmap(bb);
     Assert.assertTrue(rr1.equals(rrback1));
     bb.position(bb.position() + rrback1.serializedSizeInBytes());
@@ -495,12 +490,10 @@ public class TestMemoryMapping {
     MutableRoaringBitmap rr1 = MutableRoaringBitmap.bitmapOf(1, 2, 3, 4, 5, 6, 1000);
     rr1.runOptimize();
     MutableRoaringBitmap rr2 = MutableRoaringBitmap.bitmapOf(2, 3, 1010);
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(bos);
-    rr1.serialize(dos);
-    rr2.serialize(dos);
-    dos.close();
-    ByteBuffer bb = ByteBuffer.wrap(bos.toByteArray());
+    ByteBuffer bb = ByteBuffer.allocate(rr1.serializedSizeInBytes() + rr2.serializedSizeInBytes());
+    rr1.serialize(bb);
+    rr2.serialize(bb);
+    bb.flip();
     ImmutableRoaringBitmap rrback1 = new ImmutableRoaringBitmap(bb);
     Assert.assertTrue(rr1.equals(rrback1));
     bb.position(bb.position() + rrback1.serializedSizeInBytes());

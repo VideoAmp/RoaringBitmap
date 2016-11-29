@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import org.junit.Test;
 
@@ -19,21 +20,25 @@ public class TestExamples {
   public void serializationExample() throws IOException {
     File tmpfile = File.createTempFile("roaring", "bin");
     tmpfile.deleteOnExit();
-    final FileOutputStream fos = new FileOutputStream(tmpfile);
-    MutableRoaringBitmap Bitmap = MutableRoaringBitmap.bitmapOf(0, 2, 55, 64, 1 << 30);
-    System.out.println("Created the bitmap " + Bitmap);
+    FileChannel fc = FileChannel.open(tmpfile.toPath(), StandardOpenOption.WRITE, StandardOpenOption.READ);
+    MutableRoaringBitmap bitmap = MutableRoaringBitmap.bitmapOf(0, 2, 55, 64, 1 << 30);
+    System.out.println("Created the bitmap " + bitmap);
     // If there were runs of consecutive values, you could
     // call Bitmap.runOptimize(); to improve compression
-    Bitmap.serialize(new DataOutputStream(fos));
-    long totalcount = fos.getChannel().position();
+    ByteBuffer bb = ByteBuffer.allocate(bitmap.serializedSizeInBytes());
+    bitmap.serialize(bb);
+    bb.flip();
+    fc.write(bb);
+    fc.force(false);
+    long totalcount = fc.position();
     System.out.println("Serialized total count = " + totalcount + " bytes");
-    fos.close();
+    fc.close();
     RandomAccessFile memoryMappedFile = new RandomAccessFile(tmpfile, "r");
-    ByteBuffer bb = memoryMappedFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, totalcount);
-    ImmutableRoaringBitmap mapped = new ImmutableRoaringBitmap(bb);
+    ByteBuffer bb1 = memoryMappedFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, totalcount);
+    ImmutableRoaringBitmap mapped = new ImmutableRoaringBitmap(bb1);
     System.out.println("Mapped the bitmap " + mapped);
     memoryMappedFile.close();
-    if (!mapped.equals(Bitmap)) {
+    if (!mapped.equals(bitmap)) {
       throw new RuntimeException("This will not happen");
     }
   }

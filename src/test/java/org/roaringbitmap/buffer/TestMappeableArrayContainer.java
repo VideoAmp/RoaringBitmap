@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 import static org.junit.Assert.assertEquals;
@@ -196,13 +197,11 @@ public class TestMappeableArrayContainer {
   public void roundtrip() throws Exception {
     MappeableContainer ac = new MappeableArrayContainer();
     ac = ac.add(1, 5);
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try (ObjectOutputStream oo = new ObjectOutputStream(bos)) {
-      ac.writeExternal(oo);
-    }
+    ByteBuffer buffer = ByteBuffer.allocate(ac.serializedSizeInBytes());
+    ac.serialize(buffer);
+    buffer.flip();
     MappeableContainer ac2 = new MappeableArrayContainer();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    ac2.readExternal(new ObjectInputStream(bis));
+    ac2.deserialize(buffer);
 
     assertEquals(4, ac2.getCardinality());
     for (int i = 1; i < 5; i++) {

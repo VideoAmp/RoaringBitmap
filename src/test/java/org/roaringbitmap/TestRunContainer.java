@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -2426,13 +2427,12 @@ public class TestRunContainer {
     container.add((short) 64);
     container.add((short) 256);
 
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    ObjectOutputStream out = new ObjectOutputStream(bos);
-    out.writeObject(container);
+    ByteBuffer bb = ByteBuffer.allocate(container.serializedSizeInBytes());
+    container.serialize(bb);
+    bb.flip();
 
-    ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    ObjectInputStream in = new ObjectInputStream(bis);
-    RunContainer newContainer = (RunContainer) in.readObject();
+    RunContainer newContainer = new RunContainer();
+    newContainer.deserialize(bb);
     assertEquals(container, newContainer);
     assertEquals(container.serializedSizeInBytes(), newContainer.serializedSizeInBytes());
   }

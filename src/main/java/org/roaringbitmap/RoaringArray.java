@@ -5,7 +5,9 @@
 package org.roaringbitmap;
 
 
-import java.io.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 
@@ -13,7 +15,7 @@ import java.util.Arrays;
  * Specialized array to store the containers used by a RoaringBitmap. This is not meant to be used
  * by end users.
  */
-public final class RoaringArray implements Cloneable, Externalizable {
+public final class RoaringArray implements Cloneable {
   protected static final short SERIAL_COOKIE_NO_RUNCONTAINER = 12346;
   protected static final short SERIAL_COOKIE = 12347;
   protected static final int NO_OFFSET_THRESHOLD = 4;
@@ -223,15 +225,15 @@ public final class RoaringArray implements Cloneable, Externalizable {
    * @param in the DataInput stream
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void deserialize(DataInput in) throws IOException {
+  public void deserialize(ByteBuffer in) throws IOException {
+    in.order(ByteOrder.LITTLE_ENDIAN);
     this.clear();
     // little endian
-    final int cookie = Integer.reverseBytes(in.readInt());
+    final int cookie = in.getInt();
     if ((cookie & 0xFFFF) != SERIAL_COOKIE && cookie != SERIAL_COOKIE_NO_RUNCONTAINER) {
       throw new IOException("I failed to find one of the right cookies.");
     }
-    this.size = ((cookie & 0xFFFF) == SERIAL_COOKIE) ? (cookie >>> 16) + 1
-        : Integer.reverseBytes(in.readInt());
+    this.size = ((cookie & 0xFFFF) == SERIAL_COOKIE) ? (cookie >>> 16) + 1 : in.getInt();
 
     if ((this.keys == null) || (this.keys.length < this.size)) {
       this.keys = new short[this.size];
@@ -243,15 +245,15 @@ public final class RoaringArray implements Cloneable, Externalizable {
     boolean hasrun = (cookie & 0xFFFF) == SERIAL_COOKIE;
     if (hasrun) {
       bitmapOfRunContainers = new byte[(size + 7) / 8];
-      in.readFully(bitmapOfRunContainers);
+      in.get(bitmapOfRunContainers);
     }
 
     final short keys[] = new short[this.size];
     final int cardinalities[] = new int[this.size];
     final boolean isBitmap[] = new boolean[this.size];
     for (int k = 0; k < this.size; ++k) {
-      keys[k] = Short.reverseBytes(in.readShort());
-      cardinalities[k] = 1 + (0xFFFF & Short.reverseBytes(in.readShort()));
+      keys[k] = in.getShort();
+      cardinalities[k] = 1 + (0xFFFF & in.getShort());
 
       isBitmap[k] = cardinalities[k] > ArrayContainer.DEFAULT_MAX_SIZE;
       if (bitmapOfRunContainers != null && (bitmapOfRunContainers[k / 8] & (1 << (k % 8))) != 0) {
@@ -260,7 +262,8 @@ public final class RoaringArray implements Cloneable, Externalizable {
     }
     if ((!hasrun) || (this.size >= NO_OFFSET_THRESHOLD)) {
       // skipping the offsets
-      in.skipBytes(this.size * 4);
+      int newPosition = in.position() + (this.size * 4);
+      in.position(newPosition);
     }
     // Reading the containers
     for (int k = 0; k < this.size; ++k) {
@@ -269,23 +272,23 @@ public final class RoaringArray implements Cloneable, Externalizable {
         final long[] bitmapArray = new long[BitmapContainer.MAX_CAPACITY / 64];
         // little endian
         for (int l = 0; l < bitmapArray.length; ++l) {
-          bitmapArray[l] = Long.reverseBytes(in.readLong());
+          bitmapArray[l] = in.getLong();
         }
         val = new BitmapContainer(bitmapArray, cardinalities[k]);
       } else if (bitmapOfRunContainers != null
           && ((bitmapOfRunContainers[k / 8] & (1 << (k % 8))) != 0)) {
         // cf RunContainer.writeArray()
-        int nbrruns = Util.toIntUnsigned(Short.reverseBytes(in.readShort()));
+        int nbrruns = Util.toIntUnsigned(in.getShort());
         final short lengthsAndValues[] = new short[2 * nbrruns];
 
         for (int j = 0; j < 2 * nbrruns; ++j) {
-          lengthsAndValues[j] = Short.reverseBytes(in.readShort());
+          lengthsAndValues[j] = in.getShort();
         }
         val = new RunContainer(lengthsAndValues, nbrruns);
       } else {
         final short[] shortArray = new short[cardinalities[k]];
         for (int l = 0; l < shortArray.length; ++l) {
-          shortArray[l] = Short.reverseBytes(in.readShort());
+          shortArray[l] = in.getShort();
         }
         val = new ArrayContainer(shortArray);
       }
@@ -456,7 +459,6 @@ public final class RoaringArray implements Cloneable, Externalizable {
     }
   }
 
-  
   // insert a new key, it is assumed that it does not exist
   protected void insertNewKeyValueAt(int i, short key, Container value) {
     extendArray(1);
@@ -465,11 +467,6 @@ public final class RoaringArray implements Cloneable, Externalizable {
     System.arraycopy(values, i, values, i + 1, size - i);
     values[i] = value;
     size++;
-  }
-
-  @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    deserialize(in);
   }
 
   protected void removeAtIndex(int i) {
@@ -505,8 +502,6 @@ public final class RoaringArray implements Cloneable, Externalizable {
     this.size = newLength;
   }
 
-
-
   /**
    * Serialize.
    *
@@ -515,36 +510,37 @@ public final class RoaringArray implements Cloneable, Externalizable {
    * @param out the DataOutput stream
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  public void serialize(DataOutput out) throws IOException {
+  public void serialize(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
     int startOffset = 0;
     boolean hasrun = hasRunContainer();
     if (hasrun) {
-      out.writeInt(Integer.reverseBytes(SERIAL_COOKIE | ((size - 1) << 16)));
+      out.putInt(SERIAL_COOKIE | ((size - 1) << 16));
       byte[] bitmapOfRunContainers = new byte[(size + 7) / 8];
       for (int i = 0; i < size; ++i) {
         if (this.values[i] instanceof RunContainer) {
           bitmapOfRunContainers[i / 8] |= (1 << (i % 8));
         }
       }
-      out.write(bitmapOfRunContainers);
+      out.put(bitmapOfRunContainers);
       if (this.size < NO_OFFSET_THRESHOLD) {
         startOffset = 4 + 4 * this.size + bitmapOfRunContainers.length;
       } else {
         startOffset = 4 + 8 * this.size + bitmapOfRunContainers.length;
       }
     } else { // backwards compatibility
-      out.writeInt(Integer.reverseBytes(SERIAL_COOKIE_NO_RUNCONTAINER));
-      out.writeInt(Integer.reverseBytes(size));
+      out.putInt(SERIAL_COOKIE_NO_RUNCONTAINER);
+      out.putInt(size);
       startOffset = 4 + 4 + 4 * this.size + 4 * this.size;
     }
     for (int k = 0; k < size; ++k) {
-      out.writeShort(Short.reverseBytes(this.keys[k]));
-      out.writeShort(Short.reverseBytes((short) (this.values[k].getCardinality() - 1)));
+      out.putShort(this.keys[k]);
+      out.putShort((short) (this.values[k].getCardinality() - 1));
     }
     if ((!hasrun) || (this.size >= NO_OFFSET_THRESHOLD)) {
       // writing the containers offsets
       for (int k = 0; k < this.size; k++) {
-        out.writeInt(Integer.reverseBytes(startOffset));
+        out.putInt(startOffset);
         startOffset = startOffset + this.values[k].getArraySizeInBytes();
       }
     }
@@ -572,10 +568,5 @@ public final class RoaringArray implements Cloneable, Externalizable {
 
   protected int size() {
     return this.size;
-  }
-
-  @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    serialize(out);
   }
 }

@@ -10,6 +10,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -228,13 +229,11 @@ public class TestBitmapContainer {
   public void roundtrip() throws Exception {
     Container bc = new BitmapContainer();
     bc = bc.add(1, 5);
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try (ObjectOutputStream oo = new ObjectOutputStream(bos)) {
-      bc.writeExternal(oo);
-    }
+    ByteBuffer buffer = ByteBuffer.allocate(bc.serializedSizeInBytes());
+    bc.serialize(buffer);
+    buffer.flip();
     Container bc2 = new BitmapContainer();
-    final ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    bc2.readExternal(new ObjectInputStream(bis));
+    bc2.deserialize(buffer);
 
     assertEquals(4, bc2.getCardinality());
     for (int i = 1; i < 5; i++) {

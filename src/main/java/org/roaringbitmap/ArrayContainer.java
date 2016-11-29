@@ -4,13 +4,15 @@
 
 package org.roaringbitmap;
 
-import java.io.*;
+import org.roaringbitmap.buffer.MappeableArrayContainer;
+import org.roaringbitmap.buffer.MappeableContainer;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
-
-import org.roaringbitmap.buffer.MappeableArrayContainer;
-import org.roaringbitmap.buffer.MappeableContainer;
 
 
 /**
@@ -282,13 +284,14 @@ public final class ArrayContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void deserialize(DataInput in) throws IOException {
-    this.cardinality = 0xFFFF & Short.reverseBytes(in.readShort());
+  public void deserialize(ByteBuffer in) throws IOException {
+    in.order(ByteOrder.LITTLE_ENDIAN);
+    this.cardinality = in.getShort();
     if (this.content.length < this.cardinality) {
       this.content = new short[this.cardinality];
     }
     for (int k = 0; k < this.cardinality; ++k) {
-      this.content[k] = Short.reverseBytes(in.readShort());;
+      this.content[k] = in.getShort();
     }
   }
 
@@ -895,11 +898,6 @@ public final class ArrayContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    deserialize(in);
-  }
-
-  @Override
   public Container remove(int begin, int end) {
     if(end == begin) {
       return clone();
@@ -964,11 +962,12 @@ public final class ArrayContainer extends Container implements Cloneable {
   }
 
   @Override
-  public void serialize(DataOutput out) throws IOException {
-    out.writeShort(Short.reverseBytes((short) this.cardinality));
+  public void serialize(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
+    out.putShort((short) this.cardinality);
     // little endian
     for (int k = 0; k < this.cardinality; ++k) {
-      out.writeShort(Short.reverseBytes(this.content[k]));
+      out.putShort(this.content[k]);
     }
   }
 
@@ -1030,18 +1029,14 @@ public final class ArrayContainer extends Container implements Cloneable {
   }
 
   @Override
-  protected void writeArray(DataOutput out) throws IOException {
+  protected void writeArray(ByteBuffer out) throws IOException {
+    out.order(ByteOrder.LITTLE_ENDIAN);
     // little endian
     for (int k = 0; k < this.cardinality; ++k) {
       short v = this.content[k];
-      out.write(v & 0xFF);
-      out.write((v >>> 8) & 0xFF);
+      out.put((byte) (v & 0xFF));
+      out.put((byte) ((v >>> 8) & 0xFF));
     }
-  }
-
-  @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
-    serialize(out);
   }
 
   @Override
